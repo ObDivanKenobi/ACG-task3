@@ -1,0 +1,147 @@
+@@ -0,0 +1,146 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace task3
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Point[] mult = readPointMult();
+            Point[] poly = ConvexHull(mult);
+            PrintPoints(poly, "Выпуклую оболочку введённого множества составляют точки:");
+
+            Console.ReadKey();
+        }
+
+        //чтение, очевидно, точки
+        static void ReadPoint(ref Point p, string msg)
+        {
+            Console.WriteLine(msg);
+            bool correct = false;
+            while (!correct)
+            {
+                string[] line = Console.ReadLine().Split();
+                if (line.Length != 2)
+                    continue;
+
+                int tmp;
+                if (!int.TryParse(line[0], out tmp))
+                {
+                    Console.WriteLine("Неверные координаты!");
+                    correct = false;
+                }
+                else
+                {
+                    p.X = tmp;
+                    if (!int.TryParse(line[1], out tmp))
+                    {
+                        Console.WriteLine("Неверные координаты!");
+                        correct = false;
+                    }
+                    else
+                    {
+                        p.Y = tmp;
+                        correct = true;
+                    }
+                }
+            }
+        }
+
+        //получение координат вектора из координат концов
+        static Point Vect(Point a, Point b)
+        {
+            return new Point(b.X - a.X, b.Y - a.Y);
+        }
+
+        //косое (псевдоскалярное) произведение векторов a и b
+        static int WedgeProd(Point a, Point b)
+        {
+            return a.X * b.Y - b.X * a.Y;
+        }
+        //получение множества точек
+        static Point[] readPointMult()
+        {
+            LinkedList<Point> tmp = new LinkedList<Point>();
+            Console.WriteLine("Вводите координаты точек множества (попарно через пробел). Для окончания ввода нажмите ВВОД:");
+            string str = Console.ReadLine();
+            while (str != "")
+            {
+                string[] line = str.Split();
+                int tmpX, tmpY;
+                if ((line.Length == 2)&&(Int32.TryParse(line[0], out tmpX)))
+                {
+                    if (Int32.TryParse(line[1], out tmpY))
+                        tmp.AddLast(new Point(tmpX, tmpY));
+                }
+                str = Console.ReadLine();
+            }
+
+            Point[] mult = new Point[tmp.Count];
+            LinkedListNode<Point> node = tmp.First;
+            for (int i = 0; i<tmp.Count; i++)
+            {
+                mult[i] = node.Value;
+                node = node.Next;
+            }
+
+            return mult;
+        }
+
+        static Point[] ConvexHull(Point[] mult)
+        {
+
+            LinkedList<Point> tmp = new LinkedList<Point>();
+            int next, cur, first = 0;
+            for (int i = 0; i<mult.Count(); i++)
+            {
+                if ((mult[i].X <= mult[first].X) && (mult[i].Y < mult[first].Y))
+                    first = i; 
+            }
+
+            cur = first;
+            do
+            {
+                tmp.AddLast(mult[cur]);
+                next = cur;
+                //ищем следующую
+                for (int i = mult.Count()-1; i>=0; --i)
+                {
+                    if ((mult[i].X == mult[cur].X) && (mult[i].Y == mult[cur].Y))
+                        continue;
+                    int wp = WedgeProd(Vect(mult[i], mult[cur]), Vect(mult[next], mult[cur]));
+                    bool inBox = (Math.Abs(mult[next].X - Math.Min(mult[cur].X, mult[i].X)) <= 0 || Math.Min(mult[cur].X, mult[i].X) <= mult[next].X) &&
+                                 (Math.Abs(Math.Max(mult[cur].X, mult[i].X) - mult[next].X) <= 0 || Math.Max(mult[cur].X, mult[i].X) >= mult[next].X) &&
+                                 (Math.Abs(mult[next].Y - Math.Min(mult[cur].Y, mult[i].Y)) <= 0 || Math.Min(mult[cur].Y, mult[i].Y) <= mult[next].Y) &&
+                                 (Math.Abs(Math.Max(mult[cur].Y, mult[i].X) - mult[next].Y) <= 0 || Math.Max(mult[cur].Y, mult[i].Y) >= mult[next].Y);
+                    if (next == cur || wp > 0 ||(wp == 0 && inBox))
+                        next = i;
+                }
+                cur = next;
+            } while (cur != first);
+
+            Point[] hull = new Point[tmp.Count];
+            LinkedListNode<Point> node = tmp.First;
+            for (int i = 0; i < tmp.Count; i++)
+            {
+                hull[i] = node.Value;
+                node = node.Next;
+            }
+
+            return hull;
+        }
+
+        static void PrintPoints(Point[] poly, string msg)
+        {
+            Console.WriteLine(msg);
+            for (int i = 0; i < poly.Length; i++)
+                Console.WriteLine("({0}; {1})", poly[i].X, poly[i].Y);
+        }
+    }
+}
